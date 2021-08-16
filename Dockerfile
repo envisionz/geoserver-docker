@@ -43,7 +43,7 @@ COPY --from=downloader --chown=${GSRV_USER}:${GSRV_GROUP_NAME} /geoserver-dl/ext
 COPY --from=downloader --chown=${GSRV_USER}:${GSRV_GROUP_NAME} /geoserver-dl/geoserver-war ${CATALINA_HOME}/webapps/geoserver/
 
 RUN apt-get -y update && apt-get --no-install-recommends -y install \
-    gdal-bin libgdal-java postgresql-client libturbojpeg0 libturbojpeg0-dev \
+    gdal-bin libgdal-java postgresql-client libturbojpeg0 libturbojpeg0-dev xmlstarlet \
     fonts-noto fonts-dejavu unifont fonts-hanazono \
     && rm -rf /var/lib/apt/lists/*
 
