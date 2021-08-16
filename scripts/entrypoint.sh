@@ -42,6 +42,22 @@ if [ ! -z "$GSRV_INSTALL_PLUGINS" ]; then
     done
 fi
 
+# Init data directory if empty
+if [ -n "$(find "$GSRV_DATA_DIR" -maxdepth 0 -type d -empty 2>/dev/null)" ]; then
+    echo "Initialising data directory..."
+    cp -r "${geoserver_dir}/data/." "$GSRV_DATA_DIR/"
+    # Delete sample/demo data
+    rm -rf "${GSRV_DATA_DIR}/workspaces/*"
+    rm -rf "${GSRV_DATA_DIR}/layergroups/*"
+    rm -rf "${GSRV_DATA_DIR}/data/*"
+    rm -rf "${GSRV_DATA_DIR}/coverages/*"
+    rm -rf "${GSRV_DATA_DIR}/palettes/*"
+    rm -rf "${GSRV_DATA_DIR}/demo"
+    rm -rf "${GSRV_DATA_DIR}/plugIns"
+    rm -rf "${GSRV_DATA_DIR}/validation"
+    find "${GSRV_DATA_DIR}/styles/" -type f ! -name 'default*.sld' -delete
+fi
+
 if [ ! -z "$GSRV_PATH_PREFIX" ]; then
     tmp_path=${GSRV_PATH_PREFIX#/}
     GSRV_PATH_PREFIX=${tmp_path%/}
