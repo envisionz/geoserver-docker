@@ -55,7 +55,6 @@ ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:/usr/lib/jni:${LD_LIBRARY_PATH}
 ENV GSRV_DATA_DIR=/srv/geoserver_data
 
 RUN mkdir -p ${GSRV_DATA_DIR} && chown -R ${GSRV_USER}:${GSRV_GROUP_NAME} ${GSRV_DATA_DIR}
-VOLUME [ "${GSRV_DATA_DIR}" ]
 
 COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./scripts/entrypoint.sh /gsrv_entrypoint.sh
 RUN chmod +x /gsrv_entrypoint.sh
