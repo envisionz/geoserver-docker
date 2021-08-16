@@ -16,15 +16,15 @@ ARG GSRV_VER_PATCH
 ARG GSRV_VERSION
 ARG GSRV_UID
 ARG GSRV_GID
-ARG GSRV_USER
-ARG GSRV_GROUP_NAME
 
 RUN apt-get -y update; apt-get -y --no-install-recommends install \
-    wget curl parallel xmlstarlet
+    wget curl unzip parallel xmlstarlet
 
 RUN mkdir -p /geoserver-dl/geoserver-war /geoserver-dl/ext/stable /geoserver-dl/ext/community
 WORKDIR /geoserver-dl
 
-COPY scripts/download.sh ./download.sh
-RUN chmod +x ./download.sh
+COPY scripts/download.sh scripts/setup.sh ./
+RUN chmod +x ./download.sh ./setup.sh
 RUN ./download.sh
+RUN ./setup.sh
+
