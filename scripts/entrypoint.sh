@@ -1,9 +1,46 @@
 #!/bin/bash
 
+# Check if the user just wants a list of available plugins
+if [ "$1" = "list-plugins" ]; then
+    list_plugins()
+    {
+        cd "$1"
+        for plugin in *.zip
+        do
+            echo "${plugin%.*}"
+        done
+    }
+    echo "Available STABLE extensions"
+    echo "==========================="
+    list_plugins /geoserver-ext/stable
+    echo " "
+    echo "Available COMMUNITY extensions"
+    echo "=============================="
+    list_plugins /geoserver-ext/community
+    exit 0
+fi
+
+geoserver_dir="${CATALINA_HOME}/webapps/geoserver"
+
 # Default variables
 [ -z "$GWC_CACHE_DIR" ] && GWC_CACHE_DIR=${GSRV_DATA_DIR}/gwc
 [ -z "$JAVA_MIN_MEM" ] && JAVA_MIN_MEM=256m
 [ -z "$JAVA_MAX_MEM" ] && JAVA_MAX_MEM=1024M
+
+# Install plugins from a comma separated list of plugins
+if [ ! -z "$GSRV_INSTALL_PLUGINS" ]; then
+    plugins="${GSRV_INSTALL_PLUGINS//,/ }"
+    for plugin in $plugins
+    do
+        if [ -f "/geoserver-ext/stable/${plugin}.zip" ]; then
+            echo "Installing STABLE extension ${plugin}" && unzip -o -j -d "${geoserver_dir}/WEB-INF/lib" "/geoserver-ext/stable/${plugin}.zip" '*.jar'
+        elif [ -f "/geoserver-ext/community/${plugin}.zip" ]; then
+            echo "Installing COMMUNITY extension ${plugin}" && unzip -o -j -d "${geoserver_dir}/WEB-INF/lib" "/geoserver-ext/community/${plugin}.zip" '*.jar'
+        else
+            echo "Extension ${plugin} not found!"
+        fi
+    done
+fi
 
 if [ ! -z "$GSRV_PATH_PREFIX" ]; then
     tmp_path=${GSRV_PATH_PREFIX#/}
