@@ -21,7 +21,6 @@ gsrv_short_vers=$(cut -d '.' -f 1,2 <<< "$GSRV_VERSION")
 stable_ext_rss="https://sourceforge.net/projects/geoserver/rss?path=/GeoServer/${GSRV_VERSION}/extensions"
 community_ext_dir="https://build.geoserver.org/geoserver/${gsrv_short_vers}.x/community-latest/"
 
-dl_cmd='echo "Downloading {1}" && wget -q --retry-connrefused --waitretry=5 --tries=20 -O "{2}" "{1}" || (echo "Failed: {2}" && exit 1)'
 # Download stable extensions
 pushd stable/
 echo "Downloading stable extensions..."
@@ -45,7 +44,6 @@ echo "Downloading community extensions..."
 curl "$community_ext_dir" \
     | xmlstarlet fo -H -R -D \
     | xmlstarlet sel -t -v '//a[starts-with(@href,"geoserver")]/@href' -nl \
-    | sed -e "s|\(geoserver-${gsrv_short_vers}-SNAPSHOT-\(.*\.zip\)\)|${community_ext_dir}\1\n\2|g" \
-    | parallel -j $(nproc) --max-args 2 "$dl_cmd"
+    | parallel -j $(nproc) --max-args 1 /geoserver-dl/community-dl.sh {1} "$community_ext_dir" "/geoserver-dl/ext/community"
 popd
 popd
