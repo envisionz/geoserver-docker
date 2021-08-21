@@ -41,7 +41,7 @@ COPY --from=downloader --chown=${GSRV_USER}:${GSRV_GROUP_NAME} /geoserver-dl/ext
 COPY --from=downloader --chown=${GSRV_USER}:${GSRV_GROUP_NAME} /geoserver-dl/geoserver-war ${CATALINA_HOME}/webapps/geoserver/
 
 RUN apt-get -y update && apt-get --no-install-recommends -y install \
-    gdal-bin libgdal-java postgresql-client libturbojpeg0 libturbojpeg0-dev xmlstarlet unzip curl jq \
+    gdal-bin libgdal-java postgresql-client libturbojpeg0 libturbojpeg0-dev xmlstarlet unzip \
     && rm -rf /var/lib/apt/lists/*
 
 RUN rm -rf ${CATALINA_HOME}/webapps/geoserver/WEB-INF/lib/gdal*.jar \
@@ -54,9 +54,8 @@ ENV GSRV_DATA_DIR=/srv/geoserver_data
 RUN mkdir -p ${GSRV_DATA_DIR} && chown -R ${GSRV_USER}:${GSRV_GROUP_NAME} ${GSRV_DATA_DIR}
 
 COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./scripts/entrypoint.sh /gsrv_entrypoint.sh
-COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./scripts/init-rest-config.sh /init-rest-config.sh
 
-RUN chmod +x /gsrv_entrypoint.sh /init-rest-config.sh
+RUN chmod +x /gsrv_entrypoint.sh
 
 USER ${GSRV_USER}
 
