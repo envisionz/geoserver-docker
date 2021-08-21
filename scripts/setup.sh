@@ -2,7 +2,7 @@
 
 pushd ext/
 pushd stable/
-preinstalled_plugins="vectortiles-plugin wps-plugin libjpeg-turbo-plugin control-flow-plugin gdal-plugin monitor-plugin csw-plugin"
+preinstalled_plugins="wps-plugin libjpeg-turbo-plugin gdal-plugin csw-plugin"
 echo "Installing preinstalled extensions..."
 for plugin in $preinstalled_plugins
 do
