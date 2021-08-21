@@ -42,45 +42,45 @@ if [ ! -z "$GSRV_INSTALL_PLUGINS" ]; then
     done
 fi
 
-# Init data directory if empty
-if [ -n "$(find "$GSRV_DATA_DIR" -maxdepth 0 -type d -empty 2>/dev/null)" ]; then
-    echo "Initialising data directory..."
-    pushd "${geoserver_dir}/data" 
-    cp -r "security" "$GSRV_DATA_DIR/"
-    # The following is based loosely on https://github.com/kartoza/docker-geoserver/blob/master/scripts/update_passwords.sh
-    admin_user=${GSRV_ADMIN_USER:-admin}
-    random_passwd=$(openssl rand -base64 24 | tr -d '\n')
-    admin_passwd=${GSRV_ADMIN_PASS:-$random_passwd}
+# # Init data directory if empty
+# if [ -n "$(find "$GSRV_DATA_DIR" -maxdepth 0 -type d -empty 2>/dev/null)" ]; then
+#     echo "Initialising data directory..."
+#     pushd "${geoserver_dir}/data" 
+#     cp -r "security" "$GSRV_DATA_DIR/"
+#     # The following is based loosely on https://github.com/kartoza/docker-geoserver/blob/master/scripts/update_passwords.sh
+#     admin_user=${GSRV_ADMIN_USER:-admin}
+#     random_passwd=$(openssl rand -base64 24 | tr -d '\n')
+#     admin_passwd=${GSRV_ADMIN_PASS:-$random_passwd}
 
-    users_xml="${GSRV_DATA_DIR}/security/usergroup/default/users.xml"
-    roles_xml="${GSRV_DATA_DIR}/security/role/default/roles.xml"
-    classpath="${geoserver_dir}/WEB-INF/lib/"
+#     users_xml="${GSRV_DATA_DIR}/security/usergroup/default/users.xml"
+#     roles_xml="${GSRV_DATA_DIR}/security/role/default/roles.xml"
+#     classpath="${geoserver_dir}/WEB-INF/lib/"
 
-    pass_digest=$(java -classpath $(find $classpath -regex ".*jasypt-[0-9]\.[0-9]\.[0-9].*jar") org.jasypt.intf.cli.JasyptStringDigestCLI digest.sh algorithm=SHA-256 saltSizeBytes=16 iterations=100000 input="$admin_passwd" verbose=0 | tr -d '\n')
-    pass_hash="digest1:${pass_digest}"
+#     pass_digest=$(java -classpath $(find $classpath -regex ".*jasypt-[0-9]\.[0-9]\.[0-9].*jar") org.jasypt.intf.cli.JasyptStringDigestCLI digest.sh algorithm=SHA-256 saltSizeBytes=16 iterations=100000 input="$admin_passwd" verbose=0 | tr -d '\n')
+#     pass_hash="digest1:${pass_digest}"
 
-    xmlstarlet ed -P -S -L -N u=http://www.geoserver.org/security/users \
-        -u '//u:user[@name = "admin"]/@password' -v "${pass_hash}" \
-        -u '//u:user[@name = "admin"]/@name' -v "${admin_user}" \
-        "${users_xml}"
-    xmlstarlet ed -P -S -L -N r=http://www.geoserver.org/security/roles \
-        -u '//r:userRoles[@username = "admin"]/@username' -v "${admin_user}" \
-        "${roles_xml}"
+#     xmlstarlet ed -P -S -L -N u=http://www.geoserver.org/security/users \
+#         -u '//u:user[@name = "admin"]/@password' -v "${pass_hash}" \
+#         -u '//u:user[@name = "admin"]/@name' -v "${admin_user}" \
+#         "${users_xml}"
+#     xmlstarlet ed -P -S -L -N r=http://www.geoserver.org/security/roles \
+#         -u '//r:userRoles[@username = "admin"]/@username' -v "${admin_user}" \
+#         "${roles_xml}"
     
-    if [ "$admin_passwd" = "$random_passwd" ]; then
-        echo "============================="
-        echo "= Random Genarated Password ="
-        echo "============================="
-        echo " "
-        echo "  ${admin_passwd}  "
-        echo " "
-        echo "============================="
-        echo "Keep this safe. It will not be"
-        echo "shown again."
-        echo " "
-    fi
-    popd
-fi
+#     if [ "$admin_passwd" = "$random_passwd" ]; then
+#         echo "============================="
+#         echo "= Random Genarated Password ="
+#         echo "============================="
+#         echo " "
+#         echo "  ${admin_passwd}  "
+#         echo " "
+#         echo "============================="
+#         echo "Keep this safe. It will not be"
+#         echo "shown again."
+#         echo " "
+#     fi
+#     popd
+# fi
 
 if [ ! -z "$GSRV_PATH_PREFIX" ]; then
     tmp_path=${GSRV_PATH_PREFIX#/}
@@ -130,5 +130,17 @@ GSRV_OPTS="-Xms${JAVA_MIN_MEM} -Xmx${JAVA_MAX_MEM} -XX:SoftRefLRUPolicyMSPerMB=3
     -DGEOSERVER_CSRF_WHITELIST=\"${GSRV_CSRF_WHITELIST}\""
 
 export JAVA_OPTS="${JAVA_OPTS} ${GSRV_OPTS}"
+
+if [ -n "$(find "$GSRV_DATA_DIR" -maxdepth 0 -type d -empty 2>/dev/null)" ]; then
+    echo "Data directory is empty. Initializing admin user/password"
+    rest_prefix="geoserver/rest"
+    [ ! -z "$GSRV_PATH_PREFIX" ] && rest_prefix="${GSRV_PATH_PREFIX}/${rest_prefix}"
+    export GSRV_INIT_REST_PREFIX="http://localhost:8080/${rest_prefix}"
+    export GSRV_INIT_DATADIR="$GSRV_DATA_DIR"
+    [ ! -z "$GSRV_ADMIN_USER" ] && [ "$GSRV_ADMIN_USER" != "admin" ] && export GSRV_INIT_ADMIN_USER="$GSRV_ADMIN_USER"
+    [ ! -z "$GSRV_ADMIN_PASS" ] && export GSRV_INIT_ADMIN_PASS="$GSRV_ADMIN_PASS"
+    [ ! -z "$GSRV_MASTER_PASS" ] && export GSRV_INIT_MASTER_PASS="$GSRV_MASTER_PASS"
+    /init-rest-config.sh &
+fi
 
 ${CATALINA_HOME}/bin/catalina.sh run
