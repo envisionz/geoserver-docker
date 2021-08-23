@@ -28,13 +28,19 @@ fi
 geoserver_dir="${CATALINA_HOME}/webapps/geoserver"
 
 # Default variables
-[ -z "$GWC_CACHE_DIR" ] && GWC_CACHE_DIR=${GSRV_DATA_DIR}/gwc
-[ -z "$JAVA_MIN_MEM" ] && JAVA_MIN_MEM=256m
-[ -z "$JAVA_MAX_MEM" ] && JAVA_MAX_MEM=1024M
+gwc_cache_dir=${GWC_CACHE_DIR:-${GSRV_DATA_DIR}/gwc}
+java_min_mem=${JAVA_MIN_MEM:-256m}
+java_max_mem=${JAVA_MAX_MEM:-1024M}
+
+admin_user=${GSRV_ADMIN_USER:-admin}
+random_passwd=$(openssl rand -base64 24 | tr -d '\n')
+admin_passwd=${GSRV_ADMIN_PASS:-$random_passwd}
+
+install_plugins="$GSRV_INSTALL_PLUGINS"
 
 # Install plugins from a comma separated list of plugins
-if [ ! -z "$GSRV_INSTALL_PLUGINS" ]; then
-    plugins="${GSRV_INSTALL_PLUGINS//,/ }"
+if [ ! -z "$install_plugins" ]; then
+    plugins="${install_plugins//,/ }"
     for plugin in $plugins
     do
         if [ -f "/geoserver-ext/stable/${plugin}.zip" ]; then
@@ -53,10 +59,6 @@ if [ -n "$(find "$GSRV_DATA_DIR" -maxdepth 0 -type d -empty 2>/dev/null)" ]; the
     pushd "${geoserver_dir}/data" 
     cp -r "security" "$GSRV_DATA_DIR/"
     # The following is based loosely on https://github.com/kartoza/docker-geoserver/blob/master/scripts/update_passwords.sh
-    admin_user=${GSRV_ADMIN_USER:-admin}
-    random_passwd=$(openssl rand -base64 24 | tr -d '\n')
-    admin_passwd=${GSRV_ADMIN_PASS:-$random_passwd}
-
     users_xml="${GSRV_DATA_DIR}/security/usergroup/default/users.xml"
     roles_xml="${GSRV_DATA_DIR}/security/role/default/roles.xml"
     classpath="${geoserver_dir}/WEB-INF/lib/"
