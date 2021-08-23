@@ -1,5 +1,10 @@
 #!/bin/bash
 
+g_print()
+{
+    printf "%s\n" "$1"
+}
+
 # Check if the user just wants a list of available plugins
 if [ "$1" = "list-plugins" ]; then
     list_plugins()
@@ -7,15 +12,15 @@ if [ "$1" = "list-plugins" ]; then
         cd "$1"
         for plugin in *.zip
         do
-            echo "${plugin%.*}"
+            g_print "${plugin%.*}"
         done
     }
-    echo "Available STABLE extensions"
-    echo "==========================="
+    g_print "Available STABLE extensions"
+    g_print "==========================="
     list_plugins /geoserver-ext/stable
-    echo " "
-    echo "Available COMMUNITY extensions"
-    echo "=============================="
+    g_print " "
+    g_print "Available COMMUNITY extensions"
+    g_print "=============================="
     list_plugins /geoserver-ext/community
     exit 0
 fi
@@ -33,18 +38,18 @@ if [ ! -z "$GSRV_INSTALL_PLUGINS" ]; then
     for plugin in $plugins
     do
         if [ -f "/geoserver-ext/stable/${plugin}.zip" ]; then
-            echo "Installing STABLE extension ${plugin}" && unzip -o -j -d "${geoserver_dir}/WEB-INF/lib" "/geoserver-ext/stable/${plugin}.zip" '*.jar'
+            g_print "Installing STABLE extension ${plugin}" && unzip -o -j -d "${geoserver_dir}/WEB-INF/lib" "/geoserver-ext/stable/${plugin}.zip" '*.jar'
         elif [ -f "/geoserver-ext/community/${plugin}.zip" ]; then
-            echo "Installing COMMUNITY extension ${plugin}" && unzip -o -j -d "${geoserver_dir}/WEB-INF/lib" "/geoserver-ext/community/${plugin}.zip" '*.jar'
+            g_print "Installing COMMUNITY extension ${plugin}" && unzip -o -j -d "${geoserver_dir}/WEB-INF/lib" "/geoserver-ext/community/${plugin}.zip" '*.jar'
         else
-            echo "Extension ${plugin} not found!"
+            g_print "Extension ${plugin} not found!"
         fi
     done
 fi
 
 # Init data directory if empty
 if [ -n "$(find "$GSRV_DATA_DIR" -maxdepth 0 -type d -empty 2>/dev/null)" ]; then
-    echo "Initialising data directory..."
+    g_print "Initialising data directory..."
     pushd "${geoserver_dir}/data" 
     cp -r "security" "$GSRV_DATA_DIR/"
     # The following is based loosely on https://github.com/kartoza/docker-geoserver/blob/master/scripts/update_passwords.sh
@@ -68,15 +73,15 @@ if [ -n "$(find "$GSRV_DATA_DIR" -maxdepth 0 -type d -empty 2>/dev/null)" ]; the
         "${roles_xml}"
     
     if [ "$admin_passwd" = "$random_passwd" ]; then
-        echo "============================="
-        echo "= Random Genarated Password ="
-        echo "============================="
-        echo " "
-        echo "  ${admin_passwd}  "
-        echo " "
-        echo "============================="
-        echo "Keep this safe. It will not be shown again."
-        echo " "
+        g_print "============================="
+        g_print "= Random Genarated Password ="
+        g_print "============================="
+        g_print " "
+        g_print "  ${admin_passwd}  "
+        g_print " "
+        g_print "============================="
+        g_print "Keep this safe. It will not be shown again."
+        g_print " "
     fi
     popd
 fi
@@ -87,7 +92,7 @@ if [ ! -z "$GSRV_PATH_PREFIX" ]; then
 fi
 
 if [ ! -z "$GSRV_PROXY_DOMAIN" ]; then
-    echo "Setting up Geoserver reverse proxy for ${GSRV_PROXY_DOMAIN}"
+    g_print "Setting up Geoserver reverse proxy for ${GSRV_PROXY_DOMAIN}"
     [ -z "$GSRV_PROXY_IS_HTTPS" ] && scheme="http" || scheme"https"
     secure=false
     port=80
