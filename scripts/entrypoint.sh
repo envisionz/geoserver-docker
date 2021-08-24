@@ -25,6 +25,19 @@ if [ "$1" = "list-plugins" ]; then
     exit 0
 fi
 
+xml_add_update_element()
+{
+    local xpath_root="$1"
+    local element="$2"
+    local value="$3"
+    local xml_file="$4"
+    xmlstarlet ed -P -S -L \
+        -s "$xpath_root" -t elem -n "$element" -v '' \
+        -d "${xpath_root}/${element}[position() != 1]" \
+        -u "${xpath_root}/${element}" -v "$value" \
+        "$xml_file"
+}
+
 geoserver_dir="${CATALINA_HOME}/webapps/geoserver"
 
 # Default variables
@@ -37,6 +50,13 @@ random_passwd=$(openssl rand -base64 24 | tr -d '\n')
 admin_passwd=${GSRV_ADMIN_PASS:-$random_passwd}
 
 install_plugins="$GSRV_INSTALL_PLUGINS"
+
+url_path="${GSRV_URL_PATH:-/geoserver}"
+proxy_domain="$GSRV_PROXY_DOMAIN"
+proxy_proto="${GSRV_PROXY_PROTO:-http}"
+
+csrf_whitelist="$GSRV_CSRF_WHITELIST"
+cors_allowed_origins="$GSRV_CORS_ALLOWED_ORIGINS"
 
 # Install plugins from a comma separated list of plugins
 if [ ! -z "$install_plugins" ]; then
@@ -56,8 +76,18 @@ fi
 # Init data directory if empty
 if [ -n "$(find "$GSRV_DATA_DIR" -maxdepth 0 -type d -empty 2>/dev/null)" ]; then
     g_print "Initialising data directory..."
-    pushd "${geoserver_dir}/data" 
-    cp -r "security" "$GSRV_DATA_DIR/"
+    g_print "Copying Global Configuration..."
+    cp "/gs_default_data/global.xml" "$GSRV_DATA_DIR/"
+
+    g_print "Copying logging configuration..."
+    cp -r "/gs_default_data/logs" "$GSRV_DATA_DIR/"
+    cp "/gs_default_data/logging.xml" "$GSRV_DATA_DIR/"
+
+    g_print "Copying Security files..."
+    mkdir -p "$GSRV_DATA_DIR/security" && cp -r "${geoserver_dir}/data/security/." "$GSRV_DATA_DIR/security"
+    cp -r "/gs_default_data/security/config.xml" "$GSRV_DATA_DIR/security/config.xml"
+
+    g_print "Setting admin username and/or password..."
     # The following is based loosely on https://github.com/kartoza/docker-geoserver/blob/master/scripts/update_passwords.sh
     users_xml="${GSRV_DATA_DIR}/security/usergroup/default/users.xml"
     roles_xml="${GSRV_DATA_DIR}/security/role/default/roles.xml"
@@ -85,20 +115,22 @@ if [ -n "$(find "$GSRV_DATA_DIR" -maxdepth 0 -type d -empty 2>/dev/null)" ]; the
         g_print "Keep this safe. It will not be shown again."
         g_print " "
     fi
-    popd
 fi
 
-if [ ! -z "$GSRV_PATH_PREFIX" ]; then
-    tmp_path=${GSRV_PATH_PREFIX#/}
-    GSRV_PATH_PREFIX=${tmp_path%/}
+if [ ! -z "$url_path" ]; then
+    url_path=${url_path#/}
+    url_path=${url_path%/}
 fi
 
-if [ ! -z "$GSRV_PROXY_DOMAIN" ]; then
-    g_print "Setting up Geoserver reverse proxy for ${GSRV_PROXY_DOMAIN}"
-    [ -z "$GSRV_PROXY_IS_HTTPS" ] && scheme="http" || scheme"https"
+if [ ! -z "$proxy_domain" ]; then
+    g_print "Setting up Geoserver reverse proxy for ${proxy_domain}..."
+    if [ "$proxy_proto" != "http" ] || [ "$proxy_proto" != "https" ]; then
+        g_print "Warning: GSRV_PROXY_PROTO not set to http or https. Defaulting to http"
+        proxy_proto="http"
+    fi
     secure=false
     port=80
-    if [ "$scheme" = "https" ]; then
+    if [ "$proxy_proto" = "https" ]; then
         secure=true
         port=443
     fi
@@ -107,34 +139,50 @@ if [ ! -z "$GSRV_PROXY_DOMAIN" ]; then
     connector_xpath=/Server/Service/[@name='Catalina']/Connector[@port='8080']
     xmlstarlet ed -P -S -L \
         -d "${connector_xpath}/@redirectPort" \
-        -i "${connector_xpath}" -t attr -n "proxyName" -v "${GSRV_PROXY_DOMAIN}" \
-        -i "${connector_xpath}" -t attr -n "proxyPort" -v "${port}" \
-        -i "${connector_xpath}" -t attr -n "scheme" -v "${scheme}" \
-        -i "${connector_xpath}" -t attr -n "secure" -v "${secure}" \
+        -i "${connector_xpath}" -t attr -n "proxyName" -v "$proxy_domain" \
+        -i "${connector_xpath}" -t attr -n "proxyPort" -v "$port" \
+        -i "${connector_xpath}" -t attr -n "scheme" -v "$proxy_proto" \
+        -i "${connector_xpath}" -t attr -n "secure" -v "$secure" \
     ${CATALINA_HOME}/conf/server.xml
 
-    [ -z "$GSRV_PATH_PREFIX" ] && path=geoserver || path="${GSRV_PATH_PREFIX}/geoserver"
-    proxy_base_url="${scheme}://${GSRV_PROXY_DOMAIN}/${path}"
-    [ -z "$GSRV_CSRF_WHITELIST" ] && GSRV_CSRF_WHITELIST="$GSRV_PROXY_DOMAIN" || GSRV_CSRF_WHITELIST="${GSRV_PROXY_DOMAIN},${GSRV_CSRF_WHITELIST}"
+    # Set the Proxy Base URL in the geoserver global settings xml
+    proxy_base_url="${proxy_proto}://${proxy_domain}/${url_path}"
+    xml_add_update_element "/global/settings" "proxyBaseUrl" "$proxy_base_url" "$GSRV_DATA_DIR/global.xml"
+    xml_add_update_element "/global" "useHeadersProxyURL" "true" "$GSRV_DATA_DIR/global.xml"
+
+    [ -z "$csrf_whitelist" ] && csrf_whitelist="$proxy_domain" || csrf_whitelist="${proxy_domain},${csrf_whitelist}"
+
 fi
 
 # Add allowed CORS origins
-if [ ! -z "$GSRV_CORS_ALLOWED_ORIGINS" ]; then
+if [ ! -z "$cors_allowed_origins" ]; then
+    g_print "Setting CORS origins..."
     # This is a bit ugly...Sed invocation from https://stackoverflow.com/a/18002150
     sed -i '/^\s*<!-- Uncomment following filter to enable CORS in Tomcat/!b;N;/<filter>/s/.*\n//;T;:a;n;/^\s*-->/!ba;d' "${geoserver_dir}/WEB-INF/web.xml"
     sed -i '/^\s*<!-- Uncomment following filter to enable CORS/!b;N;/<filter-mapping>/s/.*\n//;T;:a;n;/^\s*-->/!ba;d' "${geoserver_dir}/WEB-INF/web.xml"
 
     xmlstarlet ed -P -S -L -u '//filter/init-param[filter-name = "cross-origin"]/param-value[param-name = "cors.allowed.headers"]' \
-        -v "$GSRV_CORS_ALLOWED_ORIGINS" "${geoserver_dir}/WEB-INF/web.xml"
+        -v "$cors_allowed_origins" "${geoserver_dir}/WEB-INF/web.xml"
 fi
 
-# In Tomcat, use '#' in webapp filename to create path separator
-[ ! -z "$GSRV_PATH_PREFIX" ] && mv -- "${geoserver_dir}" "${CATALINA_HOME}/webapps/${GSRV_PATH_PREFIX//\//#}#geoserver"
+if [ -z "$url_path" ]; then
+    # Set Geoserver as the ROOT webapp
+    g_print "Geoserver is available at '/' path"
+    rm -rf "${CATALINA_HOME}/webapps/ROOT"
+    mv -T "$geoserver_dir" "${CATALINA_HOME}/webapps/ROOT"
+else
+    # In Tomcat, use '#' in webapp filename to create path separator
+    g_print "Geoserver is available at '/${url_path}' path"
+    mv -- "${geoserver_dir}" "${CATALINA_HOME}/webapps/${url_path//\//#}"
+fi
 
-GSRV_OPTS="-Xms${JAVA_MIN_MEM} -Xmx${JAVA_MAX_MEM} -XX:SoftRefLRUPolicyMSPerMB=36000 \
-    -DGEOSERVER_DATA_DIR=${GSRV_DATA_DIR} \
-    -DGEOSERVER_CSRF_WHITELIST=\"${GSRV_CSRF_WHITELIST}\""
+geoserver_opts="-Xms${java_min_mem} \
+    -Xmx${java_max_mem} \
+    -XX:SoftRefLRUPolicyMSPerMB=36000 \
+    -Djava.security.egd=file:/dev/./urandom \
+    -DGEOSERVER_DATA_DIR=${GSRV_DATA_DIR}"
+[ ! -z "$csrf_whitelist" ] && geoserver_opts="${geoserver_opts} -DGEOSERVER_CSRF_WHITELIST=\"${csrf_whitelist}\""
 
-export JAVA_OPTS="${JAVA_OPTS} ${GSRV_OPTS}"
+export JAVA_OPTS="${JAVA_OPTS} ${geoserver_opts}"
 
 ${CATALINA_HOME}/bin/catalina.sh run
