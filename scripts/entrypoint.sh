@@ -77,15 +77,15 @@ fi
 if [ -n "$(find "$GSRV_DATA_DIR" -maxdepth 0 -type d -empty 2>/dev/null)" ]; then
     g_print "Initialising data directory..."
     g_print "Copying Global Configuration..."
-    cp "/gs_default_data/global.xml" "$GSRV_DATA_DIR/"
+    cp "/gs_default_data/global.xml" "${GSRV_DATA_DIR}/"
 
     g_print "Copying logging configuration..."
-    cp -r "/gs_default_data/logs" "$GSRV_DATA_DIR/"
-    cp "/gs_default_data/logging.xml" "$GSRV_DATA_DIR/"
+    cp -r "/gs_default_data/logs" "${GSRV_DATA_DIR}/"
+    cp "/gs_default_data/logging.xml" "${GSRV_DATA_DIR}/"
 
     g_print "Copying Security files..."
-    mkdir -p "$GSRV_DATA_DIR/security" && cp -r "${geoserver_dir}/data/security/." "$GSRV_DATA_DIR/security"
-    cp -r "/gs_default_data/security/config.xml" "$GSRV_DATA_DIR/security/config.xml"
+    mkdir -p "${GSRV_DATA_DIR}/security" && cp -r "${geoserver_dir}/data/security/." "${GSRV_DATA_DIR}/security"
+    cp -r "/gs_default_data/security/config.xml" "${GSRV_DATA_DIR}/security/config.xml"
 
     g_print "Setting admin username and/or password..."
     # The following is based loosely on https://github.com/kartoza/docker-geoserver/blob/master/scripts/update_passwords.sh
