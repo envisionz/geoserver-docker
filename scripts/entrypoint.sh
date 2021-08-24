@@ -124,7 +124,7 @@ fi
 
 if [ ! -z "$proxy_domain" ]; then
     g_print "Setting up Geoserver reverse proxy for ${proxy_domain}..."
-    if [ "$proxy_proto" != "http" ] || [ "$proxy_proto" != "https" ]; then
+    if [ "$proxy_proto" != "http" ] && [ "$proxy_proto" != "https" ]; then
         g_print "Warning: GSRV_PROXY_PROTO not set to http or https. Defaulting to http"
         proxy_proto="http"
     fi
@@ -136,7 +136,7 @@ if [ ! -z "$proxy_domain" ]; then
     fi
 
     # Add an appropriate connector in the Tomcat server configuration
-    connector_xpath=/Server/Service/[@name='Catalina']/Connector[@port='8080']
+    connector_xpath="/Server/Service[@name=\"Catalina\"]/Connector[@port=\"8080\"]"
     xmlstarlet ed -P -S -L \
         -d "${connector_xpath}/@redirectPort" \
         -i "${connector_xpath}" -t attr -n "proxyName" -v "$proxy_domain" \
