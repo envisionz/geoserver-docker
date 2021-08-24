@@ -1,0 +1,35 @@
+version: "3"
+services:
+  geoserver:
+    image: envisionz/geoserver
+    build:
+      context: "../"
+      args:
+        GSRV_VERSION: "2.19.2"
+    environment: 
+      GSRV_ADMIN_USER: gs_admin
+      GSRV_ADMIN_PASS: gs_password
+      GSRV_INSTALL_PLUGINS: css-plugin,wmts-multi-dimensional-plugin
+      GSRV_URL_PATH: /maps/geoserver
+      GSRV_PROXY_DOMAIN: localhost
+      GSRV_PROXY_PROTO: https
+    volumes: 
+      - gs-data:/srv/geoserver_data
+    networks:
+      - proxy
+  caddy:
+    image: caddy:2
+    ports:
+      - 80:80
+      - 443:443
+    networks:
+      - proxy
+    volumes:
+      - caddy-data:/data
+      - ./Caddyfile:/etc/caddy/Caddyfile
+
+networks: 
+  proxy:
+volumes: 
+  gs-data:
+  caddy-data:
