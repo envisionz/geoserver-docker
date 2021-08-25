@@ -10,18 +10,19 @@ LABEL org.opencontainers.image.authors="sherman@envisionz.co.nz"
 ARG GSRV_VERSION
 ARG GSRV_UID
 ARG GSRV_GID
-ARG SF_PREF_MIRROR=ixpeering
-ARG SF_FALLBACK_MIRROR=liquidtelecom
+ARG SF_FALLBACK_MIRROR=ixpeering
 
 RUN apt-get -y update; apt-get -y --no-install-recommends install \
     wget curl unzip parallel xmlstarlet
 
-RUN mkdir -p /geoserver-dl/geoserver-war /geoserver-dl/ext/stable /geoserver-dl/ext/community
+COPY ./geoserver_dl /geoserver-dl
+
 WORKDIR /geoserver-dl
 
 COPY scripts/download.sh scripts/sf-dl.sh scripts/community-dl.sh ./
 RUN chmod +x ./download.sh ./sf-dl.sh ./community-dl.sh
-RUN ./download.sh
+RUN if [ ! -d ./geoserver-war ] || [ ! -d ./ext/stable ] || [ ! -d ./ext/community ]; then ./download.sh; fi
+
 COPY scripts/setup.sh ./
 RUN chmod +x ./setup.sh
 RUN ./setup.sh

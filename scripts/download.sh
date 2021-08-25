@@ -13,11 +13,11 @@ war_url="https://sourceforge.net/projects/geoserver/files/GeoServer/${GSRV_VERSI
 war_hash=$(curl "https://sourceforge.net/projects/geoserver/rss?path=/GeoServer/2.19.2" | xmlstarlet sel -t -v "//media:content[@url = \"${war_url}\"]/media:hash")
 war_zip_fn="war.zip"
 
-$sf_dl "war" "$war_hash" "/geoserver-dl" && unzip -j -d . "$war_zip_fn" "geoserver.war" && rm "$war_zip_fn"
+$sf_dl "war" "$war_hash" "./" && unzip -j -d . "$war_zip_fn" "geoserver.war" && rm "$war_zip_fn"
 
 # Extract it
 pushd geoserver-war/
-jar -xvf ../geoserver.war && rm ../geoserver.war
+unzip ../geoserver.war && rm ../geoserver.war
 popd
 
 pushd ext/
@@ -41,7 +41,7 @@ while IFS= read -r line; do
 done <<< "$stable_urls"
 
 sed -e "s|http.*/extensions/geoserver-${GSRV_VERSION}-\(.*\).zip/download|\1|g" <<< "$stable_url_hash" \
-    | parallel -j $(nproc) --max-args 2 $sf_dl {1} {2} "/geoserver-dl/ext/stable"
+    | parallel -j $(nproc) --max-args 2 $sf_dl {1} {2} "./"
 popd
 
 # Download community extensions
@@ -50,6 +50,6 @@ echo "Downloading community extensions..."
 curl "$community_ext_dir" \
     | xmlstarlet fo -H -R -D \
     | xmlstarlet sel -t -v '//a[starts-with(@href,"geoserver")]/@href' -nl \
-    | parallel -j $(nproc) --max-args 1 /geoserver-dl/community-dl.sh {1} "$community_ext_dir" "/geoserver-dl/ext/community"
+    | parallel -j $(nproc) --max-args 1 $community_dl {1} "$community_ext_dir" "./"
 popd
 popd

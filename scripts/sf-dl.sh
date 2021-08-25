@@ -16,14 +16,13 @@ check_space "$out_dir" "output directory"
 plugin_uri_path="project/geoserver/GeoServer/${GSRV_VERSION}/extensions/geoserver-${GSRV_VERSION}-${plugin_name}.zip"
 [ "$plugin_name" = "war" ] && plugin_uri_path="project/geoserver/GeoServer/${GSRV_VERSION}/geoserver-${GSRV_VERSION}-${plugin_name}.zip"
 
-pref_url="https://${SF_PREF_MIRROR}.dl.sourceforge.net/${plugin_uri_path}"
 auto_url="https://downloads.sourceforge.net/${plugin_uri_path}"
 fallback_url="https://${SF_FALLBACK_MIRROR}.dl.sourceforge.net/${plugin_uri_path}"
 
 file_name="${out_dir}/${plugin_name}.zip"
 
 print_str="Downloading ${plugin_name} ..."
-for url in $pref_url $auto_url $fallback_url; do
+for url in $auto_url $fallback_url; do
     curl -sS -L -o "$file_name" --retry 5 --retry-delay 2 "$url"
     res=$?
     if [ "$res" != "0" ]; then
