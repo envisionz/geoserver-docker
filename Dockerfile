@@ -44,6 +44,8 @@ RUN chown -R ${GSRV_USER}:${GSRV_GROUP_NAME} ${CATALINA_HOME}
 COPY --from=downloader --chown=${GSRV_USER}:${GSRV_GROUP_NAME} /geoserver-dl/ext /geoserver-ext/
 COPY --from=downloader --chown=${GSRV_USER}:${GSRV_GROUP_NAME} /geoserver-dl/geoserver-war ${CATALINA_HOME}/webapps/geoserver/
 
+RUN rm -rf ${CATALINA_HOME}/webapps/ROOT
+
 RUN apt-get -y update && apt-get --no-install-recommends -y install \
     gdal-bin libgdal-java postgresql-client libturbojpeg0 libturbojpeg0-dev xmlstarlet unzip \
     && rm -rf /var/lib/apt/lists/*

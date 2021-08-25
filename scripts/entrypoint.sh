@@ -38,6 +38,19 @@ xml_add_update_element()
         "$xml_file"
 }
 
+xml_add_update_attr()
+{
+    local xpath_el="$1"
+    local attr_name="$2"
+    local attr_val="$3"
+    local xml_file="$4"
+
+    xmlstarlet ed -P -S -L \
+        -u "${xpath_el}/@${attr_name}" -v "$attr_val" \
+        -i "${xpath_el}[not(@${attr_name})]" -t attr -n "$attr_name" -v "$attr_val" \
+        "$xml_file"
+}
+
 geoserver_dir="${CATALINA_HOME}/webapps/geoserver"
 
 # Default variables
@@ -66,6 +79,29 @@ cf_wfs_excel="${GSRV_CF_WFS_EXCEL:-4}"
 cf_user_req="${GSRV_CF_USER_REQ:-6}"
 cf_tile_req="${GSRV_CF_TILE_REQ:-16}"
 cf_wps_limit="${GSRV_CF_WPS_LIMIT:-1000/d;30s}"
+
+# Handle paths first, to account for container restarts
+if [ ! -z "$url_path" ]; then
+    url_path=${url_path#/}
+    url_path=${url_path%/}
+fi
+
+if [ -z "$url_path" ]; then
+    # Set Geoserver as the ROOT webapp
+    gs_newdir="${CATALINA_HOME}/webapps/ROOT"
+    [ ! -d "$gs_newdir" ] && mv -T "$geoserver_dir" "$gs_newdir"
+
+    geoserver_dir="$gs_newdir"
+    g_print "Geoserver will be available at '/' path"
+else
+    # In Tomcat, use '#' in webapp filename to create path separator
+    gs_dirname="${url_path//\//#}"
+    gs_newdir="${CATALINA_HOME}/webapps/${gs_dirname}"
+    [ ! -d "$gs_newdir" ] && mv -- "$geoserver_dir" "$gs_newdir"
+
+    geoserver_dir="$gs_newdir"
+    g_print "Geoserver will be available at '/${url_path}' path"
+fi
 
 # Install plugins from a comma separated list of plugins
 if [ ! -z "$install_plugins" ]; then
@@ -126,11 +162,6 @@ if [ -n "$(find "$GSRV_DATA_DIR" -maxdepth 0 -type d -empty 2>/dev/null)" ]; the
     fi
 fi
 
-if [ ! -z "$url_path" ]; then
-    url_path=${url_path#/}
-    url_path=${url_path%/}
-fi
-
 if [ ! -z "$proxy_domain" ]; then
     g_print "Setting up Geoserver reverse proxy for ${proxy_domain}..."
     if [ "$proxy_proto" != "http" ] && [ "$proxy_proto" != "https" ]; then
@@ -148,11 +179,12 @@ if [ ! -z "$proxy_domain" ]; then
     connector_xpath="/Server/Service[@name=\"Catalina\"]/Connector[@port=\"8080\"]"
     xmlstarlet ed -P -S -L \
         -d "${connector_xpath}/@redirectPort" \
-        -i "${connector_xpath}" -t attr -n "proxyName" -v "$proxy_domain" \
-        -i "${connector_xpath}" -t attr -n "proxyPort" -v "$port" \
-        -i "${connector_xpath}" -t attr -n "scheme" -v "$proxy_proto" \
-        -i "${connector_xpath}" -t attr -n "secure" -v "$secure" \
-    ${CATALINA_HOME}/conf/server.xml
+        ${CATALINA_HOME}/conf/server.xml
+    
+    xml_add_update_attr "$connector_xpath" "proxyName" "$proxy_domain" ${CATALINA_HOME}/conf/server.xml
+    xml_add_update_attr "$connector_xpath" "proxyPort" "$port" ${CATALINA_HOME}/conf/server.xml
+    xml_add_update_attr "$connector_xpath" "scheme" "$proxy_proto" ${CATALINA_HOME}/conf/server.xml
+    xml_add_update_attr "$connector_xpath" "secure" "$secure" ${CATALINA_HOME}/conf/server.xml   
 
     # Set the Proxy Base URL in the geoserver global settings xml
     proxy_base_url="${proxy_proto}://${proxy_domain}/${url_path}"
@@ -184,17 +216,6 @@ printf "ows.wfs.getfeature.application/msexcel=%s\n" "$cf_wfs_excel" >> "$cf_pro
 printf "user=%s\n" "$cf_user_req" >> "$cf_prop"
 printf "ows.gwc=%s\n" "$cf_tile_req" >> "$cf_prop"
 printf "user.ows.wps.execute=%s\n" "$cf_wps_limit" >> "$cf_prop"
-
-if [ -z "$url_path" ]; then
-    # Set Geoserver as the ROOT webapp
-    g_print "Geoserver is available at '/' path"
-    rm -rf "${CATALINA_HOME}/webapps/ROOT"
-    mv -T "$geoserver_dir" "${CATALINA_HOME}/webapps/ROOT"
-else
-    # In Tomcat, use '#' in webapp filename to create path separator
-    g_print "Geoserver is available at '/${url_path}' path"
-    mv -- "${geoserver_dir}" "${CATALINA_HOME}/webapps/${url_path//\//#}"
-fi
 
 geoserver_opts="-Xms${java_min_mem} \
     -Xmx${java_max_mem} \
