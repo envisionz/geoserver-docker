@@ -54,9 +54,9 @@ xml_add_update_attr()
 geoserver_dir="${CATALINA_HOME}/webapps/geoserver"
 
 # Default variables
-gwc_cache_dir=${GWC_CACHE_DIR:-${GSRV_DATA_DIR}/gwc}
-java_min_mem=${JAVA_MIN_MEM:-256m}
-java_max_mem=${JAVA_MAX_MEM:-1024M}
+gwc_cache_dir=${GSRV_GWC_CACHE_DIR:-${GSRV_DATA_DIR}/gwc}
+java_min_mem=${GSRV_JAVA_MIN_MEM:-256m}
+java_max_mem=${GSRV_JAVA_MAX_MEM:-1024M}
 
 admin_user=${GSRV_ADMIN_USER:-admin}
 random_passwd=$(openssl rand -base64 24 | tr -d '\n')
