@@ -48,6 +48,7 @@ java_max_mem=${JAVA_MAX_MEM:-1024M}
 admin_user=${GSRV_ADMIN_USER:-admin}
 random_passwd=$(openssl rand -base64 24 | tr -d '\n')
 admin_passwd=${GSRV_ADMIN_PASS:-$random_passwd}
+[ -f "$GSRV_ADMIN_PASS_FILE" ] && admin_passwd=$(cat "$GSRV_ADMIN_PASS_FILE")
 
 install_plugins="$GSRV_INSTALL_PLUGINS"
 
