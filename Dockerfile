@@ -4,7 +4,7 @@ ARG GSRV_GID=5001
 ARG GSRV_USER=gsrvuser
 ARG GSRV_GROUP_NAME=gsrvusers
 
-FROM tomcat:9-jdk11-openjdk-slim-buster AS downloader
+FROM debian:buster-slim AS downloader
 LABEL org.opencontainers.image.authors="sherman@envisionz.co.nz"
 
 ARG GSRV_VERSION
