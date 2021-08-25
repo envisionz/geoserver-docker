@@ -12,8 +12,9 @@ ARG GSRV_UID
 ARG GSRV_GID
 ARG SF_FALLBACK_MIRROR=ixpeering
 
-RUN apt-get -y update; apt-get -y --no-install-recommends install \
-    wget curl unzip parallel xmlstarlet
+RUN apt-get -y update; apt-get -y --no-install-recommends install ca-certificates
+RUN apt-get -y --no-install-recommends install \
+    curl unzip parallel xmlstarlet
 
 COPY ./geoserver_dl /geoserver-dl
 
