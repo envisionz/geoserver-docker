@@ -2,12 +2,18 @@
 
 set -e
 
+sf_dl=${SF_DL_SCRIPT:-"/geoserver-dl/sf-dl.sh"}
+community_dl=${COMMUNITY_DL_SCRIPT:-"/geoserver-dl/community-dl.sh"}
+
+# make directories if they don't exist
+mkdir -p ./geoserver-war ./ext/stable ./ext/community
+
 # Download geoserver WAR
 war_url="https://sourceforge.net/projects/geoserver/files/GeoServer/${GSRV_VERSION}/geoserver-${GSRV_VERSION}-war.zip/download"
 war_hash=$(curl "https://sourceforge.net/projects/geoserver/rss?path=/GeoServer/2.19.2" | xmlstarlet sel -t -v "//media:content[@url = \"${war_url}\"]/media:hash")
 war_zip_fn="war.zip"
 
-/geoserver-dl/sf-dl.sh "war" "$war_hash" "/geoserver-dl" && unzip -j -d . "$war_zip_fn" "geoserver.war" && rm "$war_zip_fn"
+$sf_dl "war" "$war_hash" "/geoserver-dl" && unzip -j -d . "$war_zip_fn" "geoserver.war" && rm "$war_zip_fn"
 
 # Extract it
 pushd geoserver-war/
@@ -35,7 +41,7 @@ while IFS= read -r line; do
 done <<< "$stable_urls"
 
 sed -e "s|http.*/extensions/geoserver-${GSRV_VERSION}-\(.*\).zip/download|\1|g" <<< "$stable_url_hash" \
-    | parallel -j $(nproc) --max-args 2 /geoserver-dl/sf-dl.sh {1} {2} "/geoserver-dl/ext/stable"
+    | parallel -j $(nproc) --max-args 2 $sf_dl {1} {2} "/geoserver-dl/ext/stable"
 popd
 
 # Download community extensions
