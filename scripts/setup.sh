@@ -2,7 +2,7 @@
 
 pushd ext/
 pushd stable/
-preinstalled_plugins="wps-plugin libjpeg-turbo-plugin gdal-plugin csw-plugin"
+preinstalled_plugins="wps-plugin libjpeg-turbo-plugin gdal-plugin csw-plugin control-flow-plugin"
 echo "Installing preinstalled extensions..."
 for plugin in $preinstalled_plugins
 do

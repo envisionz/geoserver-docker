@@ -59,6 +59,14 @@ proxy_proto="${GSRV_PROXY_PROTO:-http}"
 csrf_whitelist="$GSRV_CSRF_WHITELIST"
 cors_allowed_origins="$GSRV_CORS_ALLOWED_ORIGINS"
 
+cf_timeout="${GSRV_CF_TIMEOUT:-60}"
+cf_parallel_req="${GSRV_CF_PARALLEL_REQ:-100}"
+cf_getmap="${GSRV_CF_GETMAP:-10}"
+cf_wfs_excel="${GSRV_CF_WFS_EXCEL:-4}"
+cf_user_req="${GSRV_CF_USER_REQ:-6}"
+cf_tile_req="${GSRV_CF_TILE_REQ:-16}"
+cf_wps_limit="${GSRV_CF_WPS_LIMIT:-1000/d;30s}"
+
 # Install plugins from a comma separated list of plugins
 if [ ! -z "$install_plugins" ]; then
     plugins="${install_plugins//,/ }"
@@ -166,6 +174,17 @@ if [ ! -z "$cors_allowed_origins" ]; then
         -v "$cors_allowed_origins" "${geoserver_dir}/WEB-INF/web.xml"
 fi
 
+# Setup control flow extension
+g_print "Setting properties for control flow extension..."
+cf_prop="${GSRV_DATA_DIR}/controlflow.properties"
+printf "timeout=%s\n" "$cf_timeout" > "$cf_prop"
+printf "ows.global=%s\n" "$cf_parallel_req" >> "$cf_prop"
+printf "ows.wms.getmap=%s\n" "$cf_getmap" >> "$cf_prop"
+printf "ows.wfs.getfeature.application/msexcel=%s\n" "$cf_wfs_excel" >> "$cf_prop"
+printf "user=%s\n" "$cf_user_req" >> "$cf_prop"
+printf "ows.gwc=%s\n" "$cf_tile_req" >> "$cf_prop"
+printf "user.ows.wps.execute=%s\n" "$cf_wps_limit" >> "$cf_prop"
+
 if [ -z "$url_path" ]; then
     # Set Geoserver as the ROOT webapp
     g_print "Geoserver is available at '/' path"
@@ -180,7 +199,6 @@ fi
 geoserver_opts="-Xms${java_min_mem} \
     -Xmx${java_max_mem} \
     -XX:SoftRefLRUPolicyMSPerMB=36000 \
-    -Djava.security.egd=file:/dev/./urandom \
     -DGEOSERVER_DATA_DIR=${GSRV_DATA_DIR}"
 [ ! -z "$csrf_whitelist" ] && geoserver_opts="${geoserver_opts} -DGEOSERVER_CSRF_WHITELIST=\"${csrf_whitelist}\""
 
