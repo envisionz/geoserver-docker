@@ -59,7 +59,8 @@ ENV GSRV_DATA_DIR=/srv/geoserver_data
 
 RUN mkdir -p ${GSRV_DATA_DIR} && chown -R ${GSRV_USER}:${GSRV_GROUP_NAME} ${GSRV_DATA_DIR}
 
-COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./default_data /gs_default_data
+COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./build_data/geoserver_data /gs_default_data
+COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./build_data/context.xml ${CATALINA_HOME}/webapps/geoserver/META-INF/context.xml
 COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./scripts/entrypoint.sh /gsrv_entrypoint.sh
 
 RUN chmod +x /gsrv_entrypoint.sh
