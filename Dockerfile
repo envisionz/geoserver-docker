@@ -47,7 +47,7 @@ COPY --from=downloader --chown=${GSRV_USER}:${GSRV_GROUP_NAME} /geoserver-dl/geo
 RUN rm -rf ${CATALINA_HOME}/webapps/ROOT
 
 RUN apt-get -y update && apt-get --no-install-recommends -y install \
-    gdal-bin libgdal-java postgresql-client libturbojpeg0 libturbojpeg0-dev xmlstarlet unzip \
+    gdal-bin libgdal-java postgresql-client libturbojpeg0 libturbojpeg0-dev xmlstarlet unzip curl jq \
     && rm -rf /var/lib/apt/lists/*
 
 RUN rm -rf ${CATALINA_HOME}/webapps/geoserver/WEB-INF/lib/gdal*.jar \
@@ -62,8 +62,11 @@ RUN mkdir -p ${GSRV_DATA_DIR} && chown -R ${GSRV_USER}:${GSRV_GROUP_NAME} ${GSRV
 COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./build_data/geoserver_data /gs_default_data
 COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./build_data/context.xml ${CATALINA_HOME}/webapps/geoserver/META-INF/context.xml
 COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./scripts/entrypoint.sh /gsrv_entrypoint.sh
+COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./scripts/healthcheck.sh /gsrv_healthcheck.sh
 
-RUN chmod +x /gsrv_entrypoint.sh
+ENV HEALTH_URL_FILE=/home/${GSRV_USER}/health_url.txt
+
+RUN chmod +x /gsrv_entrypoint.sh /gsrv_healthcheck.sh
 
 USER ${GSRV_USER}
 

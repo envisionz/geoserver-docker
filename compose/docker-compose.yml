@@ -17,6 +17,12 @@ services:
       - gs-data:/srv/geoserver_data
     networks:
       - proxy
+    healthcheck:
+      test: ["CMD", "/gsrv_healthcheck.sh"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
   caddy:
     image: caddy:2
     ports:

@@ -92,6 +92,7 @@ if [ -z "$url_path" ]; then
     [ ! -d "$gs_newdir" ] && mv -T "$geoserver_dir" "$gs_newdir"
 
     geoserver_dir="$gs_newdir"
+    printf "http://localhost:8080/health" > "$HEALTH_URL_FILE"
     g_print "Geoserver will be available at '/' path"
 else
     # In Tomcat, use '#' in webapp filename to create path separator
@@ -100,6 +101,7 @@ else
     [ ! -d "$gs_newdir" ] && mv -- "$geoserver_dir" "$gs_newdir"
 
     geoserver_dir="$gs_newdir"
+    printf "http://localhost:8080/${url_path}/health" > "$HEALTH_URL_FILE"
     g_print "Geoserver will be available at '/${url_path}' path"
 fi
 
