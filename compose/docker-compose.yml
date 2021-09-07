@@ -18,7 +18,7 @@ services:
     networks:
       - proxy
     healthcheck:
-      test: ["CMD", "/gsrv_healthcheck.sh"]
+      test: ["CMD", "/scripts/tc_healthcheck.sh"]
       interval: 10s
       timeout: 3s
       retries: 10

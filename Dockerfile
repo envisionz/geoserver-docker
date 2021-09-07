@@ -56,18 +56,23 @@ RUN rm -rf ${CATALINA_HOME}/webapps/geoserver/WEB-INF/lib/gdal*.jar \
 
 ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:/usr/lib/jni:${LD_LIBRARY_PATH}
 ENV GSRV_DATA_DIR=/srv/geoserver_data
+ENV GSRV_SCRIPT_DIR=/scripts
 
 RUN mkdir -p ${GSRV_DATA_DIR} && chown -R ${GSRV_USER}:${GSRV_GROUP_NAME} ${GSRV_DATA_DIR}
+RUN mkdir -p ${GSRV_SCRIPT_DIR} && chown -R ${GSRV_USER}:${GSRV_GROUP_NAME} ${GSRV_SCRIPT_DIR}
 
 COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./build_data/geoserver_data /gs_default_data
-COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./build_data/context.xml ${CATALINA_HOME}/webapps/geoserver/META-INF/context.xml
-COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./scripts/entrypoint.sh /gsrv_entrypoint.sh
-COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./scripts/healthcheck.sh /gsrv_healthcheck.sh
+COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./scripts/entrypoint.sh ${GSRV_SCRIPT_DIR}/gsrv_entrypoint.sh
 
+RUN curl -o ${GSRV_SCRIPT_DIR}/tc_common.sh https://raw.githubusercontent.com/envisionz/docker-common/18906e698a9de3c8bc4ae81557b3df6611132ea4/tomcat/tomcat-common.sh \
+    && chown "${GSRV_USER}:${GSRV_GROUP_NAME}" ${GSRV_SCRIPT_DIR}/tc_common.sh \
+    && chmod +x ${GSRV_SCRIPT_DIR}/tc_common.sh
+
+RUN curl -o ${GSRV_SCRIPT_DIR}/tc_healthcheck.sh https://raw.githubusercontent.com/envisionz/docker-common/18906e698a9de3c8bc4ae81557b3df6611132ea4/tomcat/healthcheck.sh \
+    && chown "${GSRV_USER}:${GSRV_GROUP_NAME}" ${GSRV_SCRIPT_DIR}/tc_healthcheck.sh \
+    && chmod +x ${GSRV_SCRIPT_DIR}/tc_healthcheck.sh
 ENV HEALTH_URL_FILE=/home/${GSRV_USER}/health_url.txt
-
-RUN chmod +x /gsrv_entrypoint.sh /gsrv_healthcheck.sh
 
 USER ${GSRV_USER}
 
-ENTRYPOINT [ "/gsrv_entrypoint.sh" ]
+ENTRYPOINT [ "/scripts/gsrv_entrypoint.sh" ]

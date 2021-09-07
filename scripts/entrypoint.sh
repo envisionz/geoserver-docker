@@ -1,9 +1,6 @@
 #!/bin/bash
 
-g_print()
-{
-    printf "%s\n" "$1"
-}
+source ${GSRV_SCRIPT_DIR}/tc_common.sh
 
 # Check if the user just wants a list of available plugins
 if [ "$1" = "list-plugins" ]; then
@@ -12,46 +9,20 @@ if [ "$1" = "list-plugins" ]; then
         cd "$1"
         for plugin in *.zip
         do
-            g_print "${plugin%.*}"
+            tc_print "${plugin%.*}"
         done
     }
-    g_print "Available STABLE extensions"
-    g_print "==========================="
+    tc_print "Available STABLE extensions"
+    tc_print "==========================="
     list_plugins /geoserver-ext/stable
-    g_print " "
-    g_print "Available COMMUNITY extensions"
-    g_print "=============================="
+    tc_print " "
+    tc_print "Available COMMUNITY extensions"
+    tc_print "=============================="
     list_plugins /geoserver-ext/community
     exit 0
 fi
 
-xml_add_update_element()
-{
-    local xpath_root="$1"
-    local element="$2"
-    local value="$3"
-    local xml_file="$4"
-    xmlstarlet ed -P -S -L \
-        -s "$xpath_root" -t elem -n "$element" -v '' \
-        -d "${xpath_root}/${element}[position() != 1]" \
-        -u "${xpath_root}/${element}" -v "$value" \
-        "$xml_file"
-}
-
-xml_add_update_attr()
-{
-    local xpath_el="$1"
-    local attr_name="$2"
-    local attr_val="$3"
-    local xml_file="$4"
-
-    xmlstarlet ed -P -S -L \
-        -u "${xpath_el}/@${attr_name}" -v "$attr_val" \
-        -i "${xpath_el}[not(@${attr_name})]" -t attr -n "$attr_name" -v "$attr_val" \
-        "$xml_file"
-}
-
-geoserver_dir="${CATALINA_HOME}/webapps/geoserver"
+geoserver_path="/geoserver"
 
 # Default variables
 gwc_cache_dir=${GSRV_GWC_CACHE_DIR:-${GSRV_DATA_DIR}/gwc}
@@ -82,28 +53,19 @@ cf_wps_limit="${GSRV_CF_WPS_LIMIT:-1000/d;30s}"
 
 # Handle paths first, to account for container restarts
 if [ ! -z "$url_path" ]; then
-    url_path=${url_path#/}
-    url_path=${url_path%/}
+    url_path=$(strip_url_path "$url_path")
 fi
 
 if [ -z "$url_path" ]; then
-    # Set Geoserver as the ROOT webapp
-    gs_newdir="${CATALINA_HOME}/webapps/ROOT"
-    [ ! -d "$gs_newdir" ] && mv -T "$geoserver_dir" "$gs_newdir"
-
-    geoserver_dir="$gs_newdir"
-    printf "http://localhost:8080/health" > "$HEALTH_URL_FILE"
-    g_print "Geoserver will be available at '/' path"
+    geoserver_dir=$(set_app_path "$geoserver_path")
+    tc_print "Geoserver will be available at '/' path"
 else
-    # In Tomcat, use '#' in webapp filename to create path separator
-    gs_dirname="${url_path//\//#}"
-    gs_newdir="${CATALINA_HOME}/webapps/${gs_dirname}"
-    [ ! -d "$gs_newdir" ] && mv -- "$geoserver_dir" "$gs_newdir"
-
-    geoserver_dir="$gs_newdir"
-    printf "http://localhost:8080/${url_path}/health" > "$HEALTH_URL_FILE"
-    g_print "Geoserver will be available at '/${url_path}' path"
+    geoserver_dir=$(set_app_path "$geoserver_path" "$url_path")
+    tc_print "Geoserver will be available at '/${url_path}' path"
 fi
+
+# Setup tomcat healthcheck
+set_healthcheck "$geoserver_dir"
 
 # Install plugins from a comma separated list of plugins
 if [ ! -z "$install_plugins" ]; then
@@ -111,30 +73,30 @@ if [ ! -z "$install_plugins" ]; then
     for plugin in $plugins
     do
         if [ -f "/geoserver-ext/stable/${plugin}.zip" ]; then
-            g_print "Installing STABLE extension ${plugin}" && unzip -o -j -d "${geoserver_dir}/WEB-INF/lib" "/geoserver-ext/stable/${plugin}.zip" '*.jar'
+            tc_print "Installing STABLE extension ${plugin}" && unzip -o -j -d "${geoserver_dir}/WEB-INF/lib" "/geoserver-ext/stable/${plugin}.zip" '*.jar'
         elif [ -f "/geoserver-ext/community/${plugin}.zip" ]; then
-            g_print "Installing COMMUNITY extension ${plugin}" && unzip -o -j -d "${geoserver_dir}/WEB-INF/lib" "/geoserver-ext/community/${plugin}.zip" '*.jar'
+            tc_print "Installing COMMUNITY extension ${plugin}" && unzip -o -j -d "${geoserver_dir}/WEB-INF/lib" "/geoserver-ext/community/${plugin}.zip" '*.jar'
         else
-            g_print "Extension ${plugin} not found!"
+            tc_print "Extension ${plugin} not found!"
         fi
     done
 fi
 
 # Init data directory if empty
 if [ -n "$(find "$GSRV_DATA_DIR" -maxdepth 0 -type d -empty 2>/dev/null)" ]; then
-    g_print "Initialising data directory..."
-    g_print "Copying Global Configuration..."
+    tc_print "Initialising data directory..."
+    tc_print "Copying Global Configuration..."
     cp "/gs_default_data/global.xml" "${GSRV_DATA_DIR}/"
 
-    g_print "Copying logging configuration..."
+    tc_print "Copying logging configuration..."
     cp -r "/gs_default_data/logs" "${GSRV_DATA_DIR}/"
     cp "/gs_default_data/logging.xml" "${GSRV_DATA_DIR}/"
 
-    g_print "Copying Security files..."
+    tc_print "Copying Security files..."
     mkdir -p "${GSRV_DATA_DIR}/security" && cp -r "${geoserver_dir}/data/security/." "${GSRV_DATA_DIR}/security"
     cp -r "/gs_default_data/security/config.xml" "${GSRV_DATA_DIR}/security/config.xml"
 
-    g_print "Setting admin username and/or password..."
+    tc_print "Setting admin username and/or password..."
     # The following is based loosely on https://github.com/kartoza/docker-geoserver/blob/master/scripts/update_passwords.sh
     users_xml="${GSRV_DATA_DIR}/security/usergroup/default/users.xml"
     roles_xml="${GSRV_DATA_DIR}/security/role/default/roles.xml"
@@ -152,41 +114,26 @@ if [ -n "$(find "$GSRV_DATA_DIR" -maxdepth 0 -type d -empty 2>/dev/null)" ]; the
         "${roles_xml}"
     
     if [ "$admin_passwd" = "$random_passwd" ]; then
-        g_print "============================="
-        g_print "= Random Genarated Password ="
-        g_print "============================="
-        g_print " "
-        g_print "  ${admin_passwd}  "
-        g_print " "
-        g_print "============================="
-        g_print "Keep this safe. It will not be shown again."
-        g_print " "
+        tc_print "============================="
+        tc_print "= Random Genarated Password ="
+        tc_print "============================="
+        tc_print " "
+        tc_print "  ${admin_passwd}  "
+        tc_print " "
+        tc_print "============================="
+        tc_print "Keep this safe. It will not be shown again."
+        tc_print " "
     fi
 fi
 
 if [ ! -z "$proxy_domain" ]; then
-    g_print "Setting up Geoserver reverse proxy for ${proxy_domain}..."
+    tc_print "Setting up Geoserver reverse proxy for ${proxy_domain}..."
     if [ "$proxy_proto" != "http" ] && [ "$proxy_proto" != "https" ]; then
-        g_print "Warning: GSRV_PROXY_PROTO not set to http or https. Defaulting to http"
+        tc_print "Warning: GSRV_PROXY_PROTO not set to http or https. Defaulting to http"
         proxy_proto="http"
     fi
-    secure=false
-    port=80
-    if [ "$proxy_proto" = "https" ]; then
-        secure=true
-        port=443
-    fi
-
-    # Add an appropriate connector in the Tomcat server configuration
-    connector_xpath="/Server/Service[@name=\"Catalina\"]/Connector[@port=\"8080\"]"
-    xmlstarlet ed -P -S -L \
-        -d "${connector_xpath}/@redirectPort" \
-        ${CATALINA_HOME}/conf/server.xml
     
-    xml_add_update_attr "$connector_xpath" "proxyName" "$proxy_domain" ${CATALINA_HOME}/conf/server.xml
-    xml_add_update_attr "$connector_xpath" "proxyPort" "$port" ${CATALINA_HOME}/conf/server.xml
-    xml_add_update_attr "$connector_xpath" "scheme" "$proxy_proto" ${CATALINA_HOME}/conf/server.xml
-    xml_add_update_attr "$connector_xpath" "secure" "$secure" ${CATALINA_HOME}/conf/server.xml   
+    set_connector_proxy "$proxy_domain" "$proxy_proto"
 
     # Set the Proxy Base URL in the geoserver global settings xml
     proxy_base_url="${proxy_proto}://${proxy_domain}/${url_path}"
@@ -199,7 +146,7 @@ fi
 
 # Add allowed CORS origins
 if [ ! -z "$cors_allowed_origins" ]; then
-    g_print "Setting CORS origins..."
+    tc_print "Setting CORS origins..."
     # This is a bit ugly...Sed invocation from https://stackoverflow.com/a/18002150
     sed -i '/^\s*<!-- Uncomment following filter to enable CORS in Tomcat/!b;N;/<filter>/s/.*\n//;T;:a;n;/^\s*-->/!ba;d' "${geoserver_dir}/WEB-INF/web.xml"
     sed -i '/^\s*<!-- Uncomment following filter to enable CORS/!b;N;/<filter-mapping>/s/.*\n//;T;:a;n;/^\s*-->/!ba;d' "${geoserver_dir}/WEB-INF/web.xml"
@@ -209,7 +156,7 @@ if [ ! -z "$cors_allowed_origins" ]; then
 fi
 
 # Setup control flow extension
-g_print "Setting properties for control flow extension..."
+tc_print "Setting properties for control flow extension..."
 cf_prop="${GSRV_DATA_DIR}/controlflow.properties"
 printf "timeout=%s\n" "$cf_timeout" > "$cf_prop"
 printf "ows.global=%s\n" "$cf_parallel_req" >> "$cf_prop"
