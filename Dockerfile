@@ -12,7 +12,7 @@ ARG GSRV_UID
 ARG GSRV_GID
 ARG SF_FALLBACK_MIRROR=ixpeering
 
-RUN apt-get -y update; apt-get -y --no-install-recommends install ca-certificates
+RUN apt-get -y update && apt-get -y install ca-certificates
 RUN apt-get -y --no-install-recommends install \
     curl unzip parallel xmlstarlet
 
@@ -28,7 +28,7 @@ COPY scripts/setup.sh ./
 RUN chmod +x ./setup.sh
 RUN ./setup.sh
 
-FROM tomcat:9-jdk11-openjdk-slim-buster AS final
+FROM tomcat:9-jre11-openjdk-slim-buster AS final
 LABEL org.opencontainers.image.authors="sherman@envisionz.co.nz"
 
 ARG GSRV_UID
