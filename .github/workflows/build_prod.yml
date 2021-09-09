@@ -3,7 +3,7 @@ name: Create and publish Geoserver Docker image
 on:
   workflow_dispatch:
   schedule:
-    cron: 5 1 * * 3
+    cron: '5 1 * * 3'
   push:
     branches:
       - v1*
