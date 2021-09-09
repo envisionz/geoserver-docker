@@ -1,4 +1,4 @@
-name: Create and publish Geoserver Docker image
+name: Build and publish Geoserver image to GHCR
 
 on:
   # Run this worflow on demand
