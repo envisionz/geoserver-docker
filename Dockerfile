@@ -48,6 +48,7 @@ RUN rm -rf ${CATALINA_HOME}/webapps/ROOT
 
 RUN apt-get -y update && apt-get --no-install-recommends -y install \
     gdal-bin libgdal-java postgresql-client libturbojpeg0 libturbojpeg0-dev xmlstarlet unzip curl jq \
+    fonts-noto fonts-dejavu fonts-liberation2 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN rm -rf ${CATALINA_HOME}/webapps/geoserver/WEB-INF/lib/gdal*.jar \
