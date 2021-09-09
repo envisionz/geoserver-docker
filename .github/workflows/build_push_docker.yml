@@ -32,16 +32,16 @@ jobs:
         with:
           ref: "v${{ matrix.branch }}"
 
-      - name: Install dependencies
-        run: sudo apt-get install -y curl unzip parallel xmlstarlet
+      # - name: Install dependencies
+      #   run: sudo apt-get install -y curl unzip parallel xmlstarlet
 
-      - name: Pre-download Geoserver and plugins
-        working-directory: ./geoserver_dl
-        run: |
-          SF_DL_SCRIPT=${PWD}/../scripts/sf-dl.sh COMMUNITY_DL_SCRIPT=${PWD}/../scripts/community-dl.sh ../scripts/download.sh
-        env:
-          GSRV_VERSION: ${{ matrix.gs_version }}
-        shell: bash
+      # - name: Pre-download Geoserver and plugins
+      #   working-directory: ./geoserver_dl
+      #   run: |
+      #     SF_DL_SCRIPT=${PWD}/../scripts/sf-dl.sh COMMUNITY_DL_SCRIPT=${PWD}/../scripts/community-dl.sh ../scripts/download.sh
+      #   env:
+      #     GSRV_VERSION: ${{ matrix.gs_version }}
+      #   shell: bash
 
       - name: Log in to the Container registry
         uses: docker/login-action@v1
@@ -70,6 +70,6 @@ jobs:
           context: .
           push: true
           build-args: GSRV_VERSION=${{ matrix.gs_version }}
-          platforms: linux/amd64,linux/arm64/v8
+          platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
