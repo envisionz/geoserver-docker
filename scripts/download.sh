@@ -10,7 +10,7 @@ mkdir -p ./geoserver-war ./ext/stable ./ext/community
 
 # Download geoserver WAR
 war_url="https://sourceforge.net/projects/geoserver/files/GeoServer/${GSRV_VERSION}/geoserver-${GSRV_VERSION}-war.zip/download"
-war_hash=$(curl "https://sourceforge.net/projects/geoserver/rss?path=/GeoServer/2.19.2" | xmlstarlet sel -t -v "//media:content[@url = \"${war_url}\"]/media:hash")
+war_hash=$(curl "https://sourceforge.net/projects/geoserver/rss?path=/GeoServer/${GSRV_VERSION}" | xmlstarlet sel -t -v "//media:content[@url = \"${war_url}\"]/media:hash")
 war_zip_fn="war.zip"
 
 $sf_dl "war" "$war_hash" "./" && unzip -j -d . "$war_zip_fn" "geoserver.war" && rm "$war_zip_fn"
