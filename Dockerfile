@@ -41,8 +41,12 @@ RUN groupadd -r ${GSRV_GROUP_NAME} -g ${GSRV_GID} && \
 
 RUN chown -R ${GSRV_USER}:${GSRV_GROUP_NAME} ${CATALINA_HOME}
 
+ENV GSRV_DIR=/srv/geoserver
+
+RUN mkdir -p ${GSRV_DIR} && chown -R ${GSRV_USER}:${GSRV_GROUP_NAME} ${GSRV_DIR}
+
 COPY --from=downloader --chown=${GSRV_USER}:${GSRV_GROUP_NAME} /geoserver-dl/ext /geoserver-ext/
-COPY --from=downloader --chown=${GSRV_USER}:${GSRV_GROUP_NAME} /geoserver-dl/geoserver-war ${CATALINA_HOME}/webapps/geoserver/
+COPY --from=downloader --chown=${GSRV_USER}:${GSRV_GROUP_NAME} /geoserver-dl/geoserver-war ${GSRV_DIR}/
 
 RUN rm -rf ${CATALINA_HOME}/webapps/ROOT
 
@@ -51,9 +55,9 @@ RUN apt-get -y update && apt-get --no-install-recommends -y install \
     fonts-noto fonts-dejavu fonts-liberation2 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN rm -rf ${CATALINA_HOME}/webapps/geoserver/WEB-INF/lib/gdal*.jar \
-    && cp /usr/share/java/gdal.jar ${CATALINA_HOME}/webapps/geoserver/WEB-INF/lib/gdal.jar \
-    && chown ${GSRV_USER}:${GSRV_GROUP_NAME} ${CATALINA_HOME}/webapps/geoserver/WEB-INF/lib/gdal.jar
+RUN rm -rf ${GSRV_DIR}/WEB-INF/lib/gdal*.jar \
+    && cp /usr/share/java/gdal.jar ${GSRV_DIR}/WEB-INF/lib/gdal.jar \
+    && chown ${GSRV_USER}:${GSRV_GROUP_NAME} ${GSRV_DIR}/WEB-INF/lib/gdal.jar
 
 ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:/usr/lib/jni:${LD_LIBRARY_PATH}
 ENV GSRV_DATA_DIR=/srv/geoserver_data
@@ -65,7 +69,7 @@ RUN mkdir -p ${GSRV_SCRIPT_DIR} && chown -R ${GSRV_USER}:${GSRV_GROUP_NAME} ${GS
 COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./build_data/geoserver_data /gs_default_data
 COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./scripts/entrypoint.sh ${GSRV_SCRIPT_DIR}/gsrv_entrypoint.sh
 
-RUN curl -o ${GSRV_SCRIPT_DIR}/tc_common.sh https://raw.githubusercontent.com/envisionz/docker-common/18906e698a9de3c8bc4ae81557b3df6611132ea4/tomcat/tomcat-common.sh \
+RUN curl -o ${GSRV_SCRIPT_DIR}/tc_common.sh https://raw.githubusercontent.com/envisionz/docker-common/75f9a6f791532f7414ac6b279b759c6169973674/tomcat/tomcat-common.sh \
     && chown "${GSRV_USER}:${GSRV_GROUP_NAME}" ${GSRV_SCRIPT_DIR}/tc_common.sh \
     && chmod +x ${GSRV_SCRIPT_DIR}/tc_common.sh
 

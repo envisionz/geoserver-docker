@@ -56,16 +56,9 @@ if [ ! -z "$url_path" ]; then
     url_path=$(strip_url_path "$url_path")
 fi
 
-if [ -z "$url_path" ]; then
-    geoserver_dir=$(set_app_path "$geoserver_path")
-    tc_print "Geoserver will be available at '/' path"
-else
-    geoserver_dir=$(set_app_path "$geoserver_path" "$url_path")
-    tc_print "Geoserver will be available at '/${url_path}' path"
-fi
+geoserver_dir="${GSRV_DIR}"
 
-# Setup tomcat healthcheck
-set_healthcheck "$geoserver_dir"
+set_app_ctx_with_hc "$geoserver_dir" "$url_path"
 
 # Install plugins from a comma separated list of plugins
 if [ ! -z "$install_plugins" ]; then
