@@ -69,7 +69,7 @@ RUN mkdir -p ${GSRV_SCRIPT_DIR} && chown -R ${GSRV_USER}:${GSRV_GROUP_NAME} ${GS
 COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./build_data/geoserver_data /gs_default_data
 COPY --chown=${GSRV_USER}:${GSRV_GROUP_NAME} ./scripts/entrypoint.sh ${GSRV_SCRIPT_DIR}/gsrv_entrypoint.sh
 
-RUN curl -o ${GSRV_SCRIPT_DIR}/tc_common.sh https://raw.githubusercontent.com/envisionz/docker-common/75f9a6f791532f7414ac6b279b759c6169973674/tomcat/tomcat-common.sh \
+RUN curl -o ${GSRV_SCRIPT_DIR}/tc_common.sh https://raw.githubusercontent.com/envisionz/docker-common/3442a7b5860647524d52a662d704d8cc5d814d99/tomcat/tomcat-common.sh \
     && chown "${GSRV_USER}:${GSRV_GROUP_NAME}" ${GSRV_SCRIPT_DIR}/tc_common.sh \
     && chmod +x ${GSRV_SCRIPT_DIR}/tc_common.sh
 
