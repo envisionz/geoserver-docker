@@ -144,7 +144,7 @@ if [ ! -z "$cors_allowed_origins" ]; then
     sed -i '/^\s*<!-- Uncomment following filter to enable CORS in Tomcat/!b;N;/<filter>/s/.*\n//;T;:a;n;/^\s*-->/!ba;d' "${geoserver_dir}/WEB-INF/web.xml"
     sed -i '/^\s*<!-- Uncomment following filter to enable CORS/!b;N;/<filter-mapping>/s/.*\n//;T;:a;n;/^\s*-->/!ba;d' "${geoserver_dir}/WEB-INF/web.xml"
 
-    xmlstarlet ed -P -S -L -u '//filter/init-param[filter-name = "cross-origin"]/param-value[param-name = "cors.allowed.headers"]' \
+    xmlstarlet ed -P -S -L -u '//filter[filter-name = "cross-origin"]/init-param[param-name = "cors.allowed.origins"]/param-value' \
         -v "$cors_allowed_origins" "${geoserver_dir}/WEB-INF/web.xml"
 fi
 
