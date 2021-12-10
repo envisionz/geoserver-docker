@@ -160,14 +160,14 @@ printf "ows.gwc=%s\n" "$cf_tile_req" >> "$cf_prop"
 printf "user.ows.wps.execute=%s\n" "$cf_wps_limit" >> "$cf_prop"
 
 # If geofence is enabled, make sure it plays nice with GeoWebCache
-case "$install_plugins" in
-    *geofence-server*)
-        if [ ! -f "${GSRV_DATA_DIR}/geofence/geofence-server.properties" ]
-            mkdir -p "${GSRV_DATA_DIR}/geofence"
-            echo 'gwc.context.suffix=gwc' >> "${GSRV_DATA_DIR}/geofence/geofence-server.properties"
-        fi;
-        ;;
-esac
+# case "$install_plugins" in
+#     *geofence-server*)
+#         if [ ! -f "${GSRV_DATA_DIR}/geofence/geofence-server.properties" ]
+#             mkdir -p "${GSRV_DATA_DIR}/geofence"
+#             echo 'gwc.context.suffix=gwc' >> "${GSRV_DATA_DIR}/geofence/geofence-server.properties"
+#         fi
+#         ;;
+# esac
 
 
 geoserver_opts="-Xms${java_min_mem} \
